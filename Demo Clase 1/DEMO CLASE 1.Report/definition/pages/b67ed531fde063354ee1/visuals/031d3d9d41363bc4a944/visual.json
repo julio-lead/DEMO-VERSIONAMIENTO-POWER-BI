@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "031d3d9d41363bc4a944",
   "position": {
     "x": 1400,
     "y": 16,
-    "width": 240,
-    "height": 96,
     "z": 4000,
+    "height": 96,
+    "width": 240,
     "tabOrder": 4000
   },
   "visual": {
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "dimTienda.Formato",
-              "nativeQueryRef": "Formato"
+              "nativeQueryRef": "Formato",
+              "active": true
             }
           ]
         }

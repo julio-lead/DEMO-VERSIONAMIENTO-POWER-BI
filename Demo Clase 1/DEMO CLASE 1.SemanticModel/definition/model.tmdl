@@ -30,11 +30,13 @@ queryGroup Hechos
 /// Tabla contenedora de medidas, sin datos.
 queryGroup Medidas
 
+	annotation PBI_QueryGroupOrder = 4
+
 annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode","MCP-PBIModeling"]
 
-annotation PBI_QueryOrder = ["pServidor","pBaseDatos","pRutaExcel","fctVentas","fctMetas","dimTienda","dimProducto","dimCliente","dimCalendario","stg_VentasDetalle","stg_Clientes","stg_Metas","stg_Tiendas"]
+annotation PBI_QueryOrder = ["pServidor","pBaseDatos","pRutaExcel","fctVentas","fctMetas","dimTienda","dimProducto","dimCliente","dimCalendario","stg_VentasDetalle","stg_Clientes","stg_Metas","stg_Tiendas","Indicadores"]
 
 ref table fctVentas
 ref table fctMetas
