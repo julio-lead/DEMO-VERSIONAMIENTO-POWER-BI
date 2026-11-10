@@ -111,6 +111,13 @@ table Indicadores
 		displayFolder: Comparativos
 		lineageTag: 860c55ac-732d-4a07-a30a-2a7734629623
 
+	measure 'Cliente Promedio' = AVERAGEX(VALUES(dimCliente[CodCliente]), [Ventas])
+		formatString: "S/"\ #,0.###############;-"S/"\ #,0.###############;"S/"\ #,0.###############
+		displayFolder: Ventas
+		lineageTag: 1d775f4c-8487-4089-aed1-cb86ae9b6db9
+
+		annotation PBI_FormatHint = {"currencyCulture":"es-PE"}
+
 	column Indicadores
 		dataType: string
 		isHidden

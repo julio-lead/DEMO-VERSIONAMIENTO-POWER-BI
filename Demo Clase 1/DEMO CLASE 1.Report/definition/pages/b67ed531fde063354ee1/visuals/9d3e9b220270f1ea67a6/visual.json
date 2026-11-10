@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "9d3e9b220270f1ea67a6",
   "position": {
     "x": 1144,
     "y": 16,
-    "width": 240,
-    "height": 96,
     "z": 3000,
+    "height": 96,
+    "width": 240,
     "tabOrder": 3000
   },
   "visual": {
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "dimCalendario.Mes",
-              "nativeQueryRef": "Mes"
+              "nativeQueryRef": "Mes",
+              "active": true
             }
           ]
         }
