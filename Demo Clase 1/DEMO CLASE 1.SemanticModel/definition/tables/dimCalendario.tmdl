@@ -1,0 +1,98 @@
+/// Calendario diario. Cubre los años completos de ventas y metas.
+table dimCalendario
+	lineageTag: ccb5a79d-f10e-441b-86e5-563dba25be43
+	dataCategory: Time
+
+	column Fecha
+		dataType: dateTime
+		isUnique
+		isKey
+		formatString: Short Date
+		lineageTag: bc3a21bb-b948-47fe-837d-0ced66a50f2d
+		summarizeBy: none
+		sourceColumn: Fecha
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Año
+		dataType: int64
+		formatString: 0
+		lineageTag: e31f2771-7d23-4ea2-83a3-7816aeb2f99c
+		summarizeBy: none
+		sourceColumn: Año
+
+	column Trimestre
+		dataType: string
+		lineageTag: 21871f68-8aec-489b-b39c-528e68c0a0b4
+		summarizeBy: none
+		sourceColumn: Trimestre
+
+	column MesNum
+		dataType: int64
+		formatString: 0
+		lineageTag: 979b12cd-9b87-443e-9c5f-af8b83b001c5
+		summarizeBy: none
+		sourceColumn: MesNum
+
+	column Mes
+		dataType: string
+		lineageTag: df79e0d0-009b-48de-94f9-93e726375fcc
+		summarizeBy: none
+		sourceColumn: Mes
+		sortByColumn: MesNum
+
+	column AñoMes
+		dataType: string
+		lineageTag: c8b69dad-1f2b-4780-b129-a56cb2988631
+		summarizeBy: none
+		sourceColumn: AñoMes
+
+	column InicioMes
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: c5b21248-641b-436a-b45c-c58597dac845
+		summarizeBy: none
+		sourceColumn: InicioMes
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column DiaSemanaNum
+		dataType: int64
+		formatString: 0
+		lineageTag: b87892f2-cd46-43bd-84d4-efe539bbed32
+		summarizeBy: none
+		sourceColumn: DiaSemanaNum
+
+	column DiaSemana
+		dataType: string
+		lineageTag: d5f709de-3613-4c69-bd29-67d1acdfd8d4
+		summarizeBy: none
+		sourceColumn: DiaSemana
+		sortByColumn: DiaSemanaNum
+
+	partition dimCalendario = m
+		mode: import
+		queryGroup: Dimensiones
+		source =
+				let
+				    AñoMin = List.Min({Date.Year(List.Min(stg_VentasDetalle[FechaHora])), List.Min(stg_Metas[Año])}),
+				    AñoMax = List.Max({Date.Year(List.Max(stg_VentasDetalle[FechaHora])), List.Max(stg_Metas[Año])}),
+				    Inicio = #date(AñoMin, 1, 1),
+				    Fin = #date(AñoMax, 12, 31),
+				    Fechas = List.Dates(Inicio, Duration.Days(Fin - Inicio) + 1, #duration(1, 0, 0, 0)),
+				    Tabla = Table.FromColumns({Fechas}, type table [Fecha = date]),
+				    NombresMes = {"Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"},
+				    NombresDia = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"},
+				    Año = Table.AddColumn(Tabla, "Año", each Date.Year([Fecha]), Int64.Type),
+				    Trimestre = Table.AddColumn(Año, "Trimestre", each "T" & Text.From(Date.QuarterOfYear([Fecha])), type text),
+				    MesNum = Table.AddColumn(Trimestre, "MesNum", each Date.Month([Fecha]), Int64.Type),
+				    Mes = Table.AddColumn(MesNum, "Mes", each NombresMes{Date.Month([Fecha]) - 1}, type text),
+				    AñoMes = Table.AddColumn(Mes, "AñoMes", each Date.ToText([Fecha], "yyyy-MM"), type text),
+				    InicioMes = Table.AddColumn(AñoMes, "InicioMes", each Date.StartOfMonth([Fecha]), type date),
+				    DiaSemanaNum = Table.AddColumn(InicioMes, "DiaSemanaNum", each Date.DayOfWeek([Fecha], Day.Monday) + 1, Int64.Type),
+				    DiaSemana = Table.AddColumn(DiaSemanaNum, "DiaSemana", each NombresDia{Date.DayOfWeek([Fecha], Day.Monday)}, type text)
+				in
+				    DiaSemana
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,109 @@
+/// Ventas a nivel de línea de ticket (NroTicket + NroLinea).
+table fctVentas
+	lineageTag: 66ad0537-01f2-49c8-ab9d-f470c0a39b86
+
+	column NroTicket
+		dataType: int64
+		formatString: 0
+		lineageTag: b0290acf-43c9-46d5-9367-a21518347fab
+		summarizeBy: none
+		sourceColumn: NroTicket
+
+	column NroLinea
+		dataType: int64
+		formatString: 0
+		lineageTag: c08ea370-2d19-4c4a-818f-4dbf052ef975
+		summarizeBy: none
+		sourceColumn: NroLinea
+
+	column Fecha
+		dataType: dateTime
+		isHidden
+		formatString: Short Date
+		lineageTag: 6daaca30-a095-44f1-b881-5643eeed7493
+		summarizeBy: none
+		sourceColumn: Fecha
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Hora
+		dataType: dateTime
+		formatString: Long Time
+		lineageTag: a8ca2db4-d0dd-4d37-877e-8210aa52147b
+		summarizeBy: none
+		sourceColumn: Hora
+
+		annotation UnderlyingDateTimeDataType = Time
+
+	column CodTienda
+		dataType: string
+		isHidden
+		lineageTag: 7a945dcd-20c6-4bda-b625-e0b402eccaa9
+		summarizeBy: none
+		sourceColumn: CodTienda
+
+	column CodProducto
+		dataType: string
+		isHidden
+		lineageTag: e599c0cf-c56c-4798-9327-d2b3c3bfc5d9
+		summarizeBy: none
+		sourceColumn: CodProducto
+
+	column CodCliente
+		dataType: string
+		isHidden
+		lineageTag: edaf506a-5a68-4a36-a211-15dd079260db
+		summarizeBy: none
+		sourceColumn: CodCliente
+
+	column MedioPago
+		dataType: string
+		lineageTag: 0e92a6e2-3d1e-476e-81fb-5527ff698a80
+		summarizeBy: none
+		sourceColumn: MedioPago
+
+	column Cantidad
+		dataType: int64
+		formatString: #,0
+		lineageTag: 621d56d6-6b48-4753-8157-a1148e2d4675
+		summarizeBy: sum
+		sourceColumn: Cantidad
+
+	column PrecioUnitario
+		dataType: decimal
+		formatString: #,0.00
+		lineageTag: 4f3a4565-66f9-431f-a0ab-bb9b7275471d
+		summarizeBy: none
+		sourceColumn: PrecioUnitario
+
+	column Descuento
+		dataType: decimal
+		formatString: #,0.00
+		lineageTag: 8e444a2d-f164-4dd9-9565-f368be4b0666
+		summarizeBy: sum
+		sourceColumn: Descuento
+
+	/// Hora del día de la venta (0 a 23), para analizar horas pico.
+	column HoraDia
+		dataType: int64
+		formatString: 0
+		lineageTag: 06887a28-03cf-4ee7-8c38-c89ae78d44da
+		summarizeBy: none
+		sourceColumn: HoraDia
+
+	partition fctVentas = m
+		mode: import
+		queryGroup: Hechos
+		source =
+				let
+				    Origen = stg_VentasDetalle,
+				    FechaAgregada = Table.AddColumn(Origen, "Fecha", each Date.From([FechaHora]), type date),
+				    HoraAgregada = Table.AddColumn(FechaAgregada, "Hora", each Time.From([FechaHora]), type time),
+				    HoraDiaAgregada = Table.AddColumn(HoraAgregada, "HoraDia", each Time.Hour([FechaHora]), Int64.Type),
+				    ColumnasSeleccionadas = Table.SelectColumns(HoraDiaAgregada, {"NroTicket", "NroLinea", "Fecha", "Hora", "HoraDia", "CodTienda", "CodProducto", "CodCliente", "MedioPago", "Cantidad", "PrecioUnitario", "Descuento"}),
+				    TipoCambiado = Table.TransformColumnTypes(ColumnasSeleccionadas, {{"NroTicket", Int64.Type}, {"NroLinea", Int64.Type}, {"Cantidad", Int64.Type}, {"PrecioUnitario", Currency.Type}, {"Descuento", Currency.Type}})
+				in
+				    TipoCambiado
+
+	annotation PBI_ResultType = Table
+

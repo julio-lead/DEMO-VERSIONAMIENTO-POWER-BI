@@ -1,0 +1,85 @@
+/// Servidor de SQL Server
+expression pServidor = "localhost" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 3eb7e0d7-b42c-49ab-b87e-0590e90fcc6a
+	queryGroup: Parámetros
+
+	annotation PBI_ResultType = Text
+
+/// Base de datos de SQL Server
+expression pBaseDatos = "CafeAndino" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 7ffef687-bd5f-4733-848c-7bee1ccec964
+	queryGroup: Parámetros
+
+	annotation PBI_ResultType = Text
+
+/// Ruta completa del Excel de Metas y Tiendas
+expression pRutaExcel = "E:\Curso Modelamiento, DAX e IA\Clase 01\Dataset Cafe Andino\CafeAndino_Metas_Tiendas.xlsx" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: a78e2fc9-9029-4cbd-a9e5-ad54596c2c06
+	queryGroup: Parámetros
+
+	annotation PBI_ResultType = Text
+
+expression stg_VentasDetalle =
+		let
+		    Origen = Sql.Database(pServidor, pBaseDatos),
+		    dbo_VentasDetalle = Origen{[Schema="dbo",Item="VentasDetalle"]}[Data],
+		    TextoRecortado = Table.TransformColumns(dbo_VentasDetalle, {
+		        {"CodTienda", each Text.Upper(Text.Trim(_)), type text},
+		        {"NombreTienda", Text.Trim, type text},
+		        {"Distrito", Text.Trim, type text},
+		        {"CodProducto", Text.Trim, type text},
+		        {"NombreProducto", each Text.Combine(List.Select(Text.Split(Text.Trim(_), " "), each _ <> ""), " "), type text},
+		        {"Categoria", Text.Trim, type text},
+		        {"MedioPago", Text.Trim, type text},
+		        {"CodCliente", Text.Trim, type text}
+		    }),
+		    CategoriaUnificada = Table.ReplaceValue(TextoRecortado, "Cafe caliente", "Café caliente", Replacer.ReplaceValue, {"Categoria"}),
+		    MedioPagoUnificado = Table.TransformColumns(CategoriaUnificada, {{"MedioPago", each if Text.StartsWith(_, "yape", Comparer.OrdinalIgnoreCase) then "Yape/Plin" else _, type text}})
+		in
+		    MedioPagoUnificado
+	lineageTag: b45e5337-d738-4500-8322-dcce8e49f4cf
+	queryGroup: Staging
+
+expression stg_Clientes =
+		let
+		    Origen = Sql.Database(pServidor, pBaseDatos),
+		    dbo_Clientes = Origen{[Schema="dbo",Item="Clientes"]}[Data],
+		    TextoRecortado = Table.TransformColumns(dbo_Clientes, {
+		        {"CodCliente", Text.Trim, type text},
+		        {"NombreCliente", Text.Trim, type text},
+		        {"Genero", Text.Trim, type text},
+		        {"DistritoCliente", Text.Trim, type text}
+		    })
+		in
+		    TextoRecortado
+	lineageTag: 41372e74-a0ec-43bd-9d30-a3bdc306b0d3
+	queryGroup: Staging
+
+expression stg_Metas =
+		let
+		    Origen = Excel.Workbook(File.Contents(pRutaExcel), null, true),
+		    Metas_Sheet = Origen{[Item="Metas",Kind="Sheet"]}[Data],
+		    FilasTituloQuitadas = Table.Skip(Metas_Sheet, 3),
+		    EncabezadosPromovidos = Table.PromoteHeaders(FilasTituloQuitadas, [PromoteAllScalars=true]),
+		    FilaTotalQuitada = Table.SelectRows(EncabezadosPromovidos, each [CodTienda] <> null),
+		    TipoCambiado = Table.TransformColumnTypes(FilaTotalQuitada, {{"Año", Int64.Type}, {"Mes", type text}, {"CodTienda", type text}, {"MetaVentas", type number}}),
+		    CodTiendaMayusculas = Table.TransformColumns(TipoCambiado, {{"CodTienda", each Text.Upper(Text.Trim(_)), type text}}),
+		    MapaMeses = [ene=1, feb=2, mar=3, abr=4, may=5, jun=6, jul=7, ago=8, set=9, sep=9, oct=10, nov=11, dic=12],
+		    MesANumero = Table.TransformColumns(CodTiendaMayusculas, {{"Mes", each Record.FieldOrDefault(MapaMeses, Text.Lower(Text.Trim(_)), null), Int64.Type}})
+		in
+		    MesANumero
+	lineageTag: 3576e423-b906-4aaf-b9b2-4a5be9bacf97
+	queryGroup: Staging
+
+expression stg_Tiendas =
+		let
+		    Origen = Excel.Workbook(File.Contents(pRutaExcel), null, true),
+		    Tiendas_Sheet = Origen{[Item="Tiendas",Kind="Sheet"]}[Data],
+		    EncabezadosPromovidos = Table.PromoteHeaders(Tiendas_Sheet, [PromoteAllScalars=true]),
+		    TipoCambiado = Table.TransformColumnTypes(EncabezadosPromovidos, {{"CodTienda", type text}, {"FechaApertura", type date}, {"Formato", type text}, {"AreaM2", Int64.Type}}, "es-PE"),
+		    TextoRecortado = Table.TransformColumns(TipoCambiado, {{"CodTienda", each Text.Upper(Text.Trim(_)), type text}, {"Formato", Text.Trim, type text}})
+		in
+		    TextoRecortado
+	lineageTag: 6e85082f-4e96-4b37-9f94-c6f78b73a8e8
+	queryGroup: Staging
+

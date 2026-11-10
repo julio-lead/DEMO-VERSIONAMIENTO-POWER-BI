@@ -1,0 +1,24 @@
+relationship fctVentas_dimCalendario
+	fromColumn: fctVentas.Fecha
+	toColumn: dimCalendario.Fecha
+
+relationship fctVentas_dimTienda
+	fromColumn: fctVentas.CodTienda
+	toColumn: dimTienda.CodTienda
+
+relationship fctVentas_dimProducto
+	fromColumn: fctVentas.CodProducto
+	toColumn: dimProducto.CodProducto
+
+relationship fctVentas_dimCliente
+	fromColumn: fctVentas.CodCliente
+	toColumn: dimCliente.CodCliente
+
+relationship fctMetas_dimCalendario
+	fromColumn: fctMetas.FechaMes
+	toColumn: dimCalendario.Fecha
+
+relationship fctMetas_dimTienda
+	fromColumn: fctMetas.CodTienda
+	toColumn: dimTienda.CodTienda
+

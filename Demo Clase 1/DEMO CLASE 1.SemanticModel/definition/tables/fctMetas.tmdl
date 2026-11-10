@@ -1,0 +1,38 @@
+/// Metas de venta por mes y tienda. FechaMes es el primer día del mes.
+table fctMetas
+	lineageTag: 820c1305-ea10-4109-99e1-bc2922191c4b
+
+	column FechaMes
+		dataType: dateTime
+		isHidden
+		formatString: Short Date
+		lineageTag: 266d843d-6978-4f6b-9796-3c78b3b667d9
+		summarizeBy: none
+		sourceColumn: FechaMes
+
+	column CodTienda
+		dataType: string
+		isHidden
+		lineageTag: 926d3c00-cb98-463d-a06a-15b5d01a5fd0
+		summarizeBy: none
+		sourceColumn: CodTienda
+
+	column MetaVentas
+		dataType: decimal
+		formatString: #,0.00
+		lineageTag: 969dc2de-cbb1-46b8-95bd-671ef1175497
+		summarizeBy: sum
+		sourceColumn: MetaVentas
+
+	partition fctMetas = m
+		mode: import
+		queryGroup: Hechos
+		source =
+				let
+				    Origen = stg_Metas,
+				    FechaMesAgregada = Table.AddColumn(Origen, "FechaMes", each #date([Año], [Mes], 1), type date),
+				    ColumnasSeleccionadas = Table.SelectColumns(FechaMesAgregada, {"FechaMes", "CodTienda", "MetaVentas"}),
+				    TipoCambiado = Table.TransformColumnTypes(ColumnasSeleccionadas, {{"MetaVentas", Currency.Type}})
+				in
+				    TipoCambiado
+

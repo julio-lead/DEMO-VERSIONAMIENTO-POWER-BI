@@ -1,0 +1,35 @@
+/// Una fila por producto.
+table dimProducto
+	lineageTag: 7282e2b3-0ab2-4a62-8485-b57936788834
+
+	column CodProducto
+		dataType: string
+		isKey
+		lineageTag: ea10518d-8ab8-4a29-bde1-e4c2f7ae3354
+		summarizeBy: none
+		sourceColumn: CodProducto
+
+	column NombreProducto
+		dataType: string
+		lineageTag: 5e3fda97-3f6a-472d-ae1e-fa822bd83c9b
+		summarizeBy: none
+		sourceColumn: NombreProducto
+
+	column Categoria
+		dataType: string
+		lineageTag: ddcb3c00-f471-44b5-ab11-a9ceace0283d
+		summarizeBy: none
+		sourceColumn: Categoria
+
+	partition dimProducto = m
+		mode: import
+		queryGroup: Dimensiones
+		source =
+				let
+				    Productos = Table.Distinct(Table.SelectColumns(stg_VentasDetalle, {"CodProducto", "NombreProducto", "Categoria"})),
+				    Ordenada = Table.Sort(Productos, {{"CodProducto", Order.Ascending}})
+				in
+				    Ordenada
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,63 @@
+/// Una fila por tienda. Combina nombre y distrito (SQL) con apertura, formato y área (Excel).
+table dimTienda
+	lineageTag: a7174cbd-d122-4a68-8c5e-e5ffaca0380f
+
+	column CodTienda
+		dataType: string
+		isKey
+		lineageTag: 928c3cd6-6b06-4de1-bc51-fd022b184991
+		summarizeBy: none
+		sourceColumn: CodTienda
+
+	column NombreTienda
+		dataType: string
+		lineageTag: d1666510-e183-40d8-801d-6160bab18fb0
+		summarizeBy: none
+		sourceColumn: NombreTienda
+
+	column Distrito
+		dataType: string
+		lineageTag: b43beaee-a80b-45ac-aecc-f066d8237325
+		summarizeBy: none
+		sourceColumn: Distrito
+
+	column FechaApertura
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 42e934f5-a240-48e7-ba4c-1142cb07c4c9
+		summarizeBy: none
+		sourceColumn: FechaApertura
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Formato
+		dataType: string
+		lineageTag: 5b1e8c2d-2cff-4d76-93ac-640b46e20564
+		summarizeBy: none
+		sourceColumn: Formato
+
+	column AreaM2
+		dataType: int64
+		formatString: #,0
+		lineageTag: ef08c98d-7ada-409e-8145-32021831b441
+		summarizeBy: sum
+		sourceColumn: AreaM2
+
+	partition dimTienda = m
+		mode: import
+		queryGroup: Dimensiones
+		source =
+				let
+				    TiendasVentas = Table.Distinct(Table.SelectColumns(stg_VentasDetalle, {"CodTienda", "NombreTienda", "Distrito"})),
+				    TiendasExcel = Table.RenameColumns(stg_Tiendas, {{"CodTienda", "CodTiendaExcel"}}),
+				    Combinada = Table.Join(TiendasVentas, {"CodTienda"}, TiendasExcel, {"CodTiendaExcel"}, JoinKind.FullOuter),
+				    ClaveUnificada = Table.AddColumn(Combinada, "Cod", each if [CodTienda] <> null then [CodTienda] else [CodTiendaExcel], type text),
+				    ColumnasQuitadas = Table.RemoveColumns(ClaveUnificada, {"CodTienda", "CodTiendaExcel"}),
+				    ClaveRenombrada = Table.RenameColumns(ColumnasQuitadas, {{"Cod", "CodTienda"}}),
+				    Reordenada = Table.ReorderColumns(ClaveRenombrada, {"CodTienda", "NombreTienda", "Distrito", "FechaApertura", "Formato", "AreaM2"}),
+				    Ordenada = Table.Sort(Reordenada, {{"CodTienda", Order.Ascending}})
+				in
+				    Ordenada
+
+	annotation PBI_ResultType = Table
+

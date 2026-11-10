@@ -1,0 +1,129 @@
+/// Tabla sin datos que contiene las medidas del modelo.
+table Indicadores
+	lineageTag: 862bbaab-c6a2-4bb7-b1d6-5191d057b25d
+
+	/// Venta neta de descuento: Precio x Cantidad - Descuento, calculada línea por línea.
+	measure Ventas =
+			SUMX (
+			    fctVentas,
+			    fctVentas[PrecioUnitario] * fctVentas[Cantidad] - fctVentas[Descuento]
+			)
+		formatString: "S/" #,0.00
+		displayFolder: Ventas
+		lineageTag: 6d0a5c2f-3624-4d00-b5a9-ef3ffbf661f2
+
+	/// Ventas netas divididas entre el número de tickets distintos.
+	measure 'Ticket Promedio' = DIVIDE ( [Ventas], DISTINCTCOUNT ( fctVentas[NroTicket] ) )
+		formatString: "S/" #,0.00
+		displayFolder: Ventas
+		lineageTag: ba649d68-2310-464c-83e9-c22bbd684d7c
+
+	/// Meta de ventas. Solo se muestra cuando el contexto abarca meses completos; por debajo del nivel de mes devuelve blanco.
+	measure Meta =
+			VAR DiasVisibles = COUNTROWS ( dimCalendario )
+			VAR DiasDeMesesCompletos =
+			    CALCULATE (
+			        COUNTROWS ( dimCalendario ),
+			        REMOVEFILTERS ( dimCalendario ),
+			        VALUES ( dimCalendario[InicioMes] )
+			    )
+			RETURN
+			    IF ( DiasVisibles = DiasDeMesesCompletos, SUM ( fctMetas[MetaVentas] ) )
+		formatString: "S/" #,0.00
+		displayFolder: Metas
+		lineageTag: 5d3ab2cd-c75c-4841-b65b-870efa74ef8c
+
+	/// Ventas entre la meta acumulada solo hasta el último mes con ventas registradas.
+	measure '% Cumplimiento' =
+			VAR UltimaFechaConVentas =
+			    CALCULATE ( MAX ( fctVentas[Fecha] ), REMOVEFILTERS () )
+			VAR MesDeCorte =
+			    DATE ( YEAR ( UltimaFechaConVentas ), MONTH ( UltimaFechaConVentas ), 1 )
+			VAR MetaHastaCorte =
+			    CALCULATE (
+			        [Meta],
+			        KEEPFILTERS ( dimCalendario[InicioMes] <= MesDeCorte )
+			    )
+			RETURN
+			    DIVIDE ( [Ventas], MetaHastaCorte )
+		formatString: 0.0%
+		displayFolder: Metas
+		lineageTag: cd07f91f-3602-426d-bda7-3e9d701b46d1
+
+	/// Ventas netas del mismo periodo del año anterior.
+	measure 'Ventas Año Anterior' = CALCULATE ( [Ventas], SAMEPERIODLASTYEAR ( dimCalendario[Fecha] ) )
+		formatString: "S/" #,0.00
+		displayFolder: Comparativos
+		lineageTag: 4bd43717-386a-4b12-a3a6-1702f8301562
+
+	/// Número de tickets distintos.
+	measure Tickets = DISTINCTCOUNT ( fctVentas[NroTicket] )
+		formatString: #,0
+		displayFolder: Ventas
+		lineageTag: d8c026be-f87b-4d88-bd35-50dbe5fe74c7
+
+	/// Meta del periodo visible, cortada en el último mes con ventas. Es el denominador de % Cumplimiento.
+	measure 'Meta a la Fecha' =
+			VAR UltimaFechaConVentas =
+			    CALCULATE ( MAX ( fctVentas[Fecha] ), REMOVEFILTERS () )
+			VAR MesDeCorte =
+			    DATE ( YEAR ( UltimaFechaConVentas ), MONTH ( UltimaFechaConVentas ), 1 )
+			RETURN
+			    CALCULATE (
+			        [Meta],
+			        KEEPFILTERS ( dimCalendario[InicioMes] <= MesDeCorte )
+			    )
+		formatString: "S/" #,0.00
+		displayFolder: Metas
+		lineageTag: 2dd1b762-797d-4af3-8d8d-c3f6b70ce996
+
+	/// Crecimiento de ventas frente al mismo periodo del año anterior, comparando solo hasta la última fecha con ventas.
+	measure 'Var % vs Año Anterior' =
+			VAR UltimaFechaConVentas =
+			    CALCULATE ( MAX ( fctVentas[Fecha] ), REMOVEFILTERS () )
+			VAR VentasActuales = [Ventas]
+			VAR VentasAnioAnterior =
+			    CALCULATE (
+			        [Ventas Año Anterior],
+			        KEEPFILTERS ( dimCalendario[Fecha] <= UltimaFechaConVentas )
+			    )
+			RETURN
+			    IF (
+			        NOT ISBLANK ( VentasActuales ),
+			        DIVIDE ( VentasActuales - VentasAnioAnterior, VentasAnioAnterior )
+			    )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: Comparativos
+		lineageTag: d64fc58d-81d8-4bbc-81b3-f2b24925f18d
+
+	/// Color de semáforo para % Cumplimiento: verde >= 100%, ámbar 95-100%, rojo < 95%.
+	measure 'Color Cumplimiento' =
+			VAR Cumplimiento = [% Cumplimiento]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( Cumplimiento ), BLANK (),
+			        Cumplimiento >= 1, "#0CA30C",
+			        Cumplimiento >= 0.95, "#E0A100",
+			        "#D03B3B"
+			    )
+		isHidden
+		displayFolder: Comparativos
+		lineageTag: 860c55ac-732d-4a07-a30a-2a7734629623
+
+	column Indicadores
+		dataType: string
+		isHidden
+		lineageTag: d772840b-76f3-406c-9664-995af5d90aa3
+		summarizeBy: none
+		sourceColumn: Indicadores
+
+	partition Indicadores = m
+		mode: import
+		queryGroup: Medidas
+		source =
+				let
+				    Origen = #table(type table [Indicadores = text], {})
+				in
+				    Origen
+

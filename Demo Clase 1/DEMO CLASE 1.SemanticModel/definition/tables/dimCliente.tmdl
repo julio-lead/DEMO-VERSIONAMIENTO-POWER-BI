@@ -1,0 +1,46 @@
+/// Una fila por cliente registrado.
+table dimCliente
+	lineageTag: 4f4c64fe-ded2-460d-b9fb-011f70a2ecb7
+
+	column CodCliente
+		dataType: string
+		isKey
+		lineageTag: 097e936e-b54f-4fcb-a9f1-bd6825ce4220
+		summarizeBy: none
+		sourceColumn: CodCliente
+
+	column NombreCliente
+		dataType: string
+		lineageTag: d48c824f-ce74-4e09-acbb-4ead3fed43d0
+		summarizeBy: none
+		sourceColumn: NombreCliente
+
+	column Genero
+		dataType: string
+		lineageTag: 445533b1-ff68-4374-a479-e7c4ddf1bd16
+		summarizeBy: none
+		sourceColumn: Genero
+
+	column FechaRegistro
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a8a95a6d-4b05-462f-959e-681760661a5b
+		summarizeBy: none
+		sourceColumn: FechaRegistro
+
+	column DistritoCliente
+		dataType: string
+		lineageTag: a9255f49-16f6-46a2-8adc-131c02c43c5b
+		summarizeBy: none
+		sourceColumn: DistritoCliente
+
+	partition dimCliente = m
+		mode: import
+		queryGroup: Dimensiones
+		source =
+				let
+				    Origen = stg_Clientes,
+				    TipoCambiado = Table.TransformColumnTypes(Origen, {{"FechaRegistro", type date}})
+				in
+				    TipoCambiado
+

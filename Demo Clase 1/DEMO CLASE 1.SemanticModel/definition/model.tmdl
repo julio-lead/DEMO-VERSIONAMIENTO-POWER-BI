@@ -1,0 +1,48 @@
+model Model
+	culture: es-PE
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: es-PE
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+/// Consultas de origen (conexión a SQL Server y Excel). No se cargan al modelo.
+queryGroup Staging
+
+	annotation PBI_QueryGroupOrder = 0
+
+/// Parámetros de conexión.
+queryGroup Parámetros
+
+	annotation PBI_QueryGroupOrder = 1
+
+/// Tablas de dimensión. Se cargan al modelo.
+queryGroup Dimensiones
+
+	annotation PBI_QueryGroupOrder = 2
+
+/// Tablas de hechos. Se cargan al modelo.
+queryGroup Hechos
+
+	annotation PBI_QueryGroupOrder = 3
+
+/// Tabla contenedora de medidas, sin datos.
+queryGroup Medidas
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_ProTooling = ["DevMode","MCP-PBIModeling"]
+
+annotation PBI_QueryOrder = ["pServidor","pBaseDatos","pRutaExcel","fctVentas","fctMetas","dimTienda","dimProducto","dimCliente","dimCalendario","stg_VentasDetalle","stg_Clientes","stg_Metas","stg_Tiendas"]
+
+ref table fctVentas
+ref table fctMetas
+ref table dimTienda
+ref table dimProducto
+ref table dimCliente
+ref table dimCalendario
+ref table Indicadores
+
+ref cultureInfo es-PE
+
