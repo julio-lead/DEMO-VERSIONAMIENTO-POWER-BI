@@ -1,0 +1,20 @@
+table auxTablaParametros
+	lineageTag: 7b5bb8b7-cd47-46d0-9ac2-33cff50c330b
+
+	column Value
+		formatString: 0
+		lineageTag: d8ffa7d1-dbf0-4e7a-9a55-4a8659b43c01
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition auxTablaParametros = calculated
+		mode: import
+		source =
+				
+				GENERATESERIES(1,100,1)
+
+	annotation PBI_Id = 0108a3f8496d4103a6f1a4aeee9056d3
+
